@@ -493,7 +493,15 @@ public class RescanUI extends javax.swing.JFrame implements fpLibrary {
 
     private void sendLogInTime() {
         try {
-            HttpResponse<JsonNode> sessionTimeRenew = Unirest.post(prefs.get("BASE_URL", "") + "/fingerprintCore/timeAtWork").field("first_name", usernameStored).field("last_name", lastnameStored).field("empCode", empCode).field("loginTime", configs.timeLoggedIn()).field("isLoggedIn", Boolean.valueOf(true)).field("emp_branch", prefs.get("empBranch", "")).field("isSuperVisor", isSupervisor).asJson();
+            HttpResponse<JsonNode> sessionTimeRenew = Unirest.post(prefs.get("BASE_URL", "")
+                    + "/fingerprintCore/timeAtWork")
+                    .field("first_name", usernameStored)
+                    .field("last_name", lastnameStored)
+                    .field("empCode", empCode)
+                    .field("loginTime", configs.timeLoggedIn())
+                    .field("isLoggedIn", Boolean.valueOf(true))
+                    .field("emp_branch", prefs.get("empBranch", ""))
+                    .field("isSuperVisor", isSupervisor).asJson();
 
             if (((JsonNode) sessionTimeRenew.getBody()).getObject().getBoolean("success")) {
 

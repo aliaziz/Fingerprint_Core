@@ -8,10 +8,12 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.WindowListener;
 import java.io.IOException;
+import java.util.Date;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.prefs.Preferences;
 import javax.swing.BorderFactory;
 import javax.swing.GroupLayout;
 import javax.swing.GroupLayout.Alignment;
@@ -26,6 +28,7 @@ public class SessionTimeout
         extends JFrame {
 
     private final Timer altTimer = new Timer();
+    private final Timer loggedOutDurationTimer = new Timer();
 
     public SessionTimeout() {
         setUndecorated(true);
@@ -34,6 +37,7 @@ public class SessionTimeout
         setAlwaysOnTop(true);
         setDefaultCloseOperation(0);
 
+        loggedOutDuration();
         altTimer.schedule(new TimerTask() {
 
             public void run() {
@@ -43,6 +47,21 @@ public class SessionTimeout
     }
 
     private JButton jButton1;
+
+    /**
+     * Times the duration time and sends an update to the server.
+     */
+    private void loggedOutDuration() {
+        loggedOutDurationTimer.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                Preferences prefs = Preferences.userRoot().node("FingerprintClass");
+                Long currentTimeInMills = new Date().getTime();
+                NetworkCalls.sendLogoutAlert(prefs, currentTimeInMills);
+            }
+
+        }, 9000L);
+    }
 
     private void tabLayout() {
         try {
@@ -93,6 +112,7 @@ public class SessionTimeout
     }
 
     private void jButton1ActionPerformed(ActionEvent evt) {
+        loggedOutDurationTimer.cancel();
         dispose();
         RescanUI login = new RescanUI();
         login.setVisible(true);
@@ -108,4 +128,5 @@ public class SessionTimeout
             }
         });
     }
+
 }

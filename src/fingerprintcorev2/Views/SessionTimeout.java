@@ -8,6 +8,8 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.WindowListener;
 import java.io.IOException;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -29,6 +31,7 @@ public class SessionTimeout
 
     private final Timer altTimer = new Timer();
     private final Timer loggedOutDurationTimer = new Timer();
+    private int hoursAway = 0;
 
     public SessionTimeout() {
         setUndecorated(true);
@@ -55,12 +58,16 @@ public class SessionTimeout
         loggedOutDurationTimer.schedule(new TimerTask() {
             @Override
             public void run() {
+                hoursAway += 1;
+                System.out.println("ran logout...");
                 Preferences prefs = Preferences.userRoot().node("FingerprintClass");
-                Long currentTimeInMills = new Date().getTime();
-                NetworkCalls.sendLogoutAlert(prefs, currentTimeInMills);
+                DateFormat format = new SimpleDateFormat("yyyy-MM-dd");
+          
+                NetworkCalls.sendLogoutAlert(prefs, format.format(new Date()), 
+                        String.valueOf(hoursAway));
             }
 
-        }, 9000L);
+        },0L, 9000L);
     }
 
     private void tabLayout() {

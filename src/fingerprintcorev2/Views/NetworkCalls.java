@@ -9,6 +9,7 @@ import com.mashape.unirest.http.HttpResponse;
 import com.mashape.unirest.http.JsonNode;
 import com.mashape.unirest.http.Unirest;
 import com.mashape.unirest.http.exceptions.UnirestException;
+import com.mashape.unirest.request.HttpRequestWithBody;
 import fingerprintcorev2.Configs.Configs;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -23,9 +24,15 @@ public class NetworkCalls {
     /**
      * Sends alerts when user is logged out for more than an hour
      */
-    static void sendLogoutAlert(Preferences pref, Long currentTimeInMills) {
-        Unirest.put(pref.get("BASE_URL", "") + "/delayedActivation/"+ pref.get("empCode", "")
-                +"/"+currentTimeInMills);
+    static void sendLogoutAlert(Preferences pref, String currentDay, String hoursAway) {
+        try {
+             Unirest.put(pref.get(Configs.BASE_URL, "")
+                    + "/fingerprintCore/fingerprint/delayedActivation/"
+                    + pref.get("empCode", "n")+"/"+currentDay+"/"+hoursAway)
+                    .asString();
+        } catch (UnirestException ex) {
+            Logger.getLogger(NetworkCalls.class.getName()).log(Level.SEVERE, null, ex);
+        }
     }
 
     /**

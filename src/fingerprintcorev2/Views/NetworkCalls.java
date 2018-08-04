@@ -47,6 +47,7 @@ public class NetworkCalls {
                     .field("first_name", firstName)
                     .field("last_name", lastName)
                     .field("logoutTime", timeLoggedOut)
+                    .field("loginTime", 0)
                     .field("empCode", prefs.get("empCode", ""))
                     .field("isSuperVisor", false).asJson();
 
@@ -54,6 +55,7 @@ public class NetworkCalls {
                     .field("first_name", firstName)
                     .field("last_name", lastName)
                     .field("logoutTime", timeLoggedOut)
+                    .field("loginTime", 0)
                     .field("empCode", prefs.get("empCode", ""))
                     .field("emp_branch", prefs.get("empBranch", ""))
                     .field("isLoggedIn", false)

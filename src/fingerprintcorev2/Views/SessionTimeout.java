@@ -59,7 +59,6 @@ public class SessionTimeout
             @Override
             public void run() {
                 hoursAway += 1;
-                System.out.println("ran logout...");
                 Preferences prefs = Preferences.userRoot().node("FingerprintClass");
                 DateFormat format = new SimpleDateFormat("yyyy-MM-dd");
           
@@ -67,7 +66,7 @@ public class SessionTimeout
                         String.valueOf(hoursAway));
             }
 
-        },0L, 9000L);
+        },0L, 3600000L);
     }
 
     private void tabLayout() {

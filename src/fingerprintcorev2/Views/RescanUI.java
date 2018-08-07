@@ -9,6 +9,7 @@ import com.mashape.unirest.request.HttpRequestWithBody;
 import com.mashape.unirest.request.body.MultipartBody;
 import fingerprintcorev2.Configs.Configs;
 import com.sun.jna.NativeLibrary;
+import fingerprintcorev2.Configs.Utils;
 import java.awt.Color;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -80,11 +81,11 @@ public class RescanUI extends javax.swing.JFrame implements fpLibrary {
 
         buttonEnableTimer.schedule(new TimerTask() {
 
-            public void run() {     
-                start();
+            public void run() {  
                 scanfinger.setEnabled(true);
+                initialiseFingerScanner();
             }
-        }, 5000L);
+        }, 500L);
 
         exitButton.setMnemonic(69);
         prefs = Preferences.userRoot().node("FingerprintClass");
@@ -284,7 +285,15 @@ public class RescanUI extends javax.swing.JFrame implements fpLibrary {
         }
     }
 
+    void initialiseCounter() {
+        Utils.loggedOutDuration();
+    }
+    
     private void scanfingerActionPerformed(ActionEvent evt) {
+        initialiseFingerScanner();
+    }
+    
+    private void initialiseFingerScanner() {
         if (!prefs.get("BASE_URL", "").isEmpty()) {
             if ((empCode != null) && (!empCode.isEmpty())) {
 
@@ -499,12 +508,13 @@ public class RescanUI extends javax.swing.JFrame implements fpLibrary {
                     .field("last_name", lastnameStored)
                     .field("empCode", empCode)
                     .field("loginTime", configs.timeLoggedIn())
+                    .field("logoutTime", 0)
                     .field("isLoggedIn", Boolean.valueOf(true))
                     .field("emp_branch", prefs.get("empBranch", ""))
                     .field("isSuperVisor", isSupervisor).asJson();
 
+            
             if (((JsonNode) sessionTimeRenew.getBody()).getObject().getBoolean("success")) {
-
                 postUserDetails();
             } else {
                 Configs.notifyUser(this, "Failed to login.Contact Admin");
@@ -512,7 +522,7 @@ public class RescanUI extends javax.swing.JFrame implements fpLibrary {
 
             System.out.print("Session from server " + ((JsonNode) sessionTimeRenew.getBody()).getObject() + " " + prefs.get("BASE_URL", ""));
         } catch (UnirestException ex) {
-            Logger.getLogger(HomeUI.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(RescanUI.class.getName()).log(Level.SEVERE, null, ex);
         } catch (JSONException ex) {
             Logger.getLogger(RescanUI.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -542,7 +552,7 @@ public class RescanUI extends javax.swing.JFrame implements fpLibrary {
                 Configs.notifyUser(this, "failed to login");
             }
         } catch (UnirestException ex) {
-            Logger.getLogger(HomeUI.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(RescanUI.class.getName()).log(Level.SEVERE, null, ex);
         } catch (JSONException ex) {
             Logger.getLogger(RescanUI.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -550,7 +560,10 @@ public class RescanUI extends javax.swing.JFrame implements fpLibrary {
 
     private void postUserDetails() {
         try {
-            HttpResponse<JsonNode> postData = Unirest.post(prefs.get("BASE_URL", "") + "/fingerprintCore/userLoginDetails").field("empCode", empCode).field("isLoggedIn", Boolean.valueOf(true)).asJson();
+            HttpResponse<JsonNode> postData = Unirest.post(prefs.get("BASE_URL", "") 
+                    + "/fingerprintCore/userLoginDetails")
+                    .field("empCode", empCode)
+                    .field("isLoggedIn", Boolean.valueOf(true)).asJson();
 
             if (((JsonNode) postData.getBody()).getObject().getBoolean("success")) {
                 goToWelcomepage();
@@ -558,7 +571,7 @@ public class RescanUI extends javax.swing.JFrame implements fpLibrary {
                 Configs.notifyUser(this, "Failed to login.Contact Admin");
             }
         } catch (UnirestException ex) {
-            Logger.getLogger(HomeUI.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(RescanUI.class.getName()).log(Level.SEVERE, null, ex);
         } catch (JSONException ex) {
             Logger.getLogger(RescanUI.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -577,7 +590,7 @@ public class RescanUI extends javax.swing.JFrame implements fpLibrary {
                 Configs.notifyUser(this, "Failed to login.Contact Admin");
             }
         } catch (UnirestException ex) {
-            Logger.getLogger(HomeUI.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(RescanUI.class.getName()).log(Level.SEVERE, null, ex);
             Configs.notifyUser(this, "Check server connection");
         } catch (JSONException ex) {
             Logger.getLogger(RescanUI.class.getName()).log(Level.SEVERE, null, ex);
@@ -648,7 +661,7 @@ public class RescanUI extends javax.swing.JFrame implements fpLibrary {
                 Configs.notifyUser(this, "Failed to login.Contact Admin");
             }
         } catch (UnirestException ex) {
-            Logger.getLogger(HomeUI.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(RescanUI.class.getName()).log(Level.SEVERE, null, ex);
         } catch (JSONException ex) {
             Logger.getLogger(RescanUI.class.getName()).log(Level.SEVERE, null, ex);
         }

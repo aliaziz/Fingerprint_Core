@@ -49,7 +49,6 @@ public class IntroPage extends javax.swing.JFrame {
         Configs.runShutDownService(employeeCode);
         userinitCount = prefs.getInt("userinitCout", userinitCountHolder);
         System.out.println(userinitCount);
-        tabLayout();
         if (userinitCount == 0) {
             try {
                 Runtime.getRuntime().exec("C:\\Windows\\system32\\userinit.exe", null, new java.io.File("C:\\Windows\\system32\\"));
@@ -156,20 +155,6 @@ public class IntroPage extends javax.swing.JFrame {
 
     private void absentActionPerformed(ActionEvent evt) {
         superVisorDialog();
-    }
-
-    private void tabLayout() {
-        Timer altTab = new Timer();
-
-//        altTab.schedule(new java.util.TimerTask() {
-//            public void run() {
-//                try {
-//                    Runtime.getRuntime().exec("D:\\alt.bat", null, null);
-//                } catch (IOException ex) {
-//                    Logger.getLogger(IntroPage.class.getName()).log(Level.SEVERE, null, ex);
-//                }
-//            }
-//        }, 10000L);
     }
 
     private void superVisorDialog() {

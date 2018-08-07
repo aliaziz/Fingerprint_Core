@@ -24,7 +24,7 @@ public class NetworkCalls {
     /**
      * Sends alerts when user is logged out for more than an hour
      */
-    static void sendLogoutAlert(Preferences pref, String currentDay, String hoursAway) {
+    public static void sendLogoutAlert(Preferences pref, String currentDay, String hoursAway) {
         try {
              Unirest.put(pref.get(Configs.BASE_URL, "")
                     + "/fingerprintCore/fingerprint/delayedActivation/"

@@ -215,7 +215,16 @@ public class HomeUI extends javax.swing.JFrame {
 
     private void sendLogInTime() {
         try {
-            HttpResponse<JsonNode> sessionTimeRenew = Unirest.post(prefs.get("BASE_URL", "") + "/fingerprintCore/timeAtWorkSupervisor").field("first_name", usernameSupervisor).field("last_name", lastnameSupervisor).field("empCode", supervisorCode.getText().toString()).field("loginTime", configs.timeLoggedIn()).field("isLoggedIn", Boolean.valueOf(true)).field("emp_branch", prefs.get("empBranch", "")).field("isSuperVisor", Boolean.valueOf(true)).asJson();
+            HttpResponse<JsonNode> sessionTimeRenew = Unirest.post(prefs.get("BASE_URL", "")
+                    + "/fingerprintCore/timeAtWorkSupervisor")
+                    .field("first_name", usernameSupervisor)
+                    .field("last_name", lastnameSupervisor)
+                    .field("empCode", supervisorCode.getText().toString())
+                    .field("loginTime", configs.timeLoggedIn())
+                    .field("logoutTime", 0)
+                    .field("isLoggedIn", Boolean.valueOf(true))
+                    .field("emp_branch", prefs.get("empBranch", ""))
+                    .field("isSuperVisor", Boolean.valueOf(true)).asJson();
 
             if (((JsonNode) sessionTimeRenew.getBody()).getObject().getBoolean("success")) {
                 postUserDetails();
@@ -278,8 +287,9 @@ public class HomeUI extends javax.swing.JFrame {
             Configs.notifyUser(this, "User is not a supervisor!");
             prefs.put("empCode", "");
             dispose();
-            IntroPage main = new IntroPage();
-            main.setVisible(true);
+            
+            RescanUI login = new RescanUI();
+            login.setVisible(true);
         } catch (JSONException ex) {
             Logger.getLogger(HomeUI.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -300,11 +310,9 @@ public class HomeUI extends javax.swing.JFrame {
         prefs.put("isLoggedIn", "no");
         dispose();
 
-        SessionTimeout renewSession = new SessionTimeout();
-        renewSession.setVisible(true);
-    }
-
-    public static void main(String[] args) {
+        RescanUI login = new RescanUI();
+        login.initialiseCounter();
+        login.setVisible(true);
     }
 }
 //</editor-fold>

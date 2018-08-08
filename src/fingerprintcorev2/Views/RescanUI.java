@@ -598,43 +598,43 @@ public class RescanUI extends javax.swing.JFrame implements fpLibrary {
     }
 
     private void checkIfComputerHasUserLoggedInToday() {
-
-        if ((dateLoggedIn == null) || (dateLoggedIn.isEmpty())) {
-
-            getUserLoginDetails();
-            System.out.println("*** comp has no prefs ***");
-        } else {
-            try {
-                System.out.println(prefs.get("dateLoggedIn", ""));
-                DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
-                Date date = new Date();
-
-                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
-                Date savedDate = sdf.parse(prefs.get("dateLoggedIn", ""));
-                Date dateToday = sdf.parse(dateFormat.format(date));
-
-                System.out.println(sdf.format(savedDate));
-                System.out.println(sdf.format(dateToday));
-
-                if (savedDate.compareTo(dateToday) == 0) {
-                    System.out.println("*** date is today ***");
-                    System.out.println("Date1 is equal to Date2");
-                    String userWantingToLogin = dateFormat.format(date) + ":" + empCode;
-                    String userAlreadyLoggedIn = prefs.get("dateLoggedInWithEmpcode", "");
-                    System.out.println(userAlreadyLoggedIn + " " + userWantingToLogin + " " + prefs.get("dateLoggedIn", "") + " ====" + prefs.get("dateLoggedInWithEmpcode", ""));
-
-                    if (userAlreadyLoggedIn.equalsIgnoreCase(userWantingToLogin)) {
-                        sendLoginAgainTime();
-                    } else {
-                        Configs.notifyUser(this, "Computer already being used by someone");
-                    }
-                } else {
-                    getUserLoginDetails();
-                }
-            } catch (java.text.ParseException ex) {
-                Logger.getLogger(RescanUI.class.getName()).log(Level.SEVERE, null, ex);
-            }
-        }
+        sendLoginAgainTime();
+//        if ((dateLoggedIn == null) || (dateLoggedIn.isEmpty())) {
+//
+//            getUserLoginDetails();
+//            System.out.println("*** comp has no prefs ***");
+//        } else {
+//            try {
+//                System.out.println(prefs.get("dateLoggedIn", ""));
+//                DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+//                Date date = new Date();
+//
+//                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+//                Date savedDate = sdf.parse(prefs.get("dateLoggedIn", ""));
+//                Date dateToday = sdf.parse(dateFormat.format(date));
+//
+//                System.out.println(sdf.format(savedDate));
+//                System.out.println(sdf.format(dateToday));
+//
+//                if (savedDate.compareTo(dateToday) == 0) {
+//                    System.out.println("*** date is today ***");
+//                    System.out.println("Date1 is equal to Date2");
+//                    String userWantingToLogin = dateFormat.format(date) + ":" + empCode;
+//                    String userAlreadyLoggedIn = prefs.get("dateLoggedInWithEmpcode", "");
+//                    System.out.println(userAlreadyLoggedIn + " " + userWantingToLogin + " " + prefs.get("dateLoggedIn", "") + " ====" + prefs.get("dateLoggedInWithEmpcode", ""));
+//
+//                    if (userAlreadyLoggedIn.equalsIgnoreCase(userWantingToLogin)) {
+//                        sendLoginAgainTime();
+//                    } else {
+//                        Configs.notifyUser(this, "Computer already being used by someone");
+//                    }
+//                } else {
+//                    getUserLoginDetails();
+//                }
+//            } catch (java.text.ParseException ex) {
+//                Logger.getLogger(RescanUI.class.getName()).log(Level.SEVERE, null, ex);
+//            }
+//        }
     }
 
     private void sendLoginAgainTime() {

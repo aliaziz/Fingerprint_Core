@@ -45,7 +45,7 @@ public class HomeUI extends javax.swing.JFrame {
     private byte[] matbuf = new byte[100];
     private int[] matsize = new int[1];
 
-    int[] randomeTime = {3600000};
+    int[] randomeTime = {36000};
     Configs configs = new Configs();
     List<String> supervisorBranchesList = new java.util.ArrayList();
     private JLabel fingeprintImage;

@@ -501,7 +501,7 @@ public class RescanUI extends javax.swing.JFrame implements fpLibrary {
     }
 
     private void sendLogInTime() {
-        if (NetworkCalls.sendUserLoginTime(prefs, configs.timeLoggedIn(), true)) {
+        if (NetworkCalls.sendUserLoginTime(prefs, configs.currentSystemTime(), true)) {
             goToWelcomepage();
         } else {
             Configs.notifyUser(this, "Failed to login.Contact Admin");
@@ -539,7 +539,7 @@ public class RescanUI extends javax.swing.JFrame implements fpLibrary {
     }
 
     private void setUserFalseLoggedIn() {
-        if (NetworkCalls.sendUserLoginTime(prefs, configs.timeLoggedIn(), false)){
+        if (NetworkCalls.sendUserLoginTime(prefs, configs.currentSystemTime(), false)){
             start();
             getFingerprintFromServer(empCode);
             fpLibrary.INSTANCE.GenFpChar();

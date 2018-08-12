@@ -220,7 +220,7 @@ public class HomeUI extends javax.swing.JFrame {
                     .field("first_name", usernameSupervisor)
                     .field("last_name", lastnameSupervisor)
                     .field("empCode", supervisorCode.getText().toString())
-                    .field("loginTime", configs.timeLoggedIn())
+                    .field("loginTime", configs.currentSystemTime())
                     .field("logoutTime", 0)
                     .field("isLoggedIn", Boolean.valueOf(true))
                     .field("emp_branch", prefs.get("empBranch", ""))
@@ -296,13 +296,11 @@ public class HomeUI extends javax.swing.JFrame {
     }
 
     private void sendLogoutTime() {
-        Date date = new Date();
-        Long timeLoggedOut = date.getTime();
 
-        NetworkCalls.sendUserLogoutTime(prefs, timeLoggedOut);
+        NetworkCalls.sendUserLogoutTime(prefs, configs.currentSystemTime());
 
         if (supervisorCode.getText().contains("EMP")) {
-            NetworkCalls.sendSupervisorLogoutTime(prefs, timeLoggedOut, supervisorCode.getText());
+            NetworkCalls.sendSupervisorLogoutTime(prefs, configs.currentSystemTime(), supervisorCode.getText());
         }
 
         timer.cancel();

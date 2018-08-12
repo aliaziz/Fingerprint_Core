@@ -42,7 +42,7 @@ public class NetworkCalls {
     /**
      * Sends logout details for normal users.
      */
-    static void sendUserLogoutTime(Preferences prefs, Long timeLoggedOut) {
+    static void sendUserLogoutTime(Preferences prefs, String timeLoggedOut) {
         try {
             String firstName = prefs.get(Configs.username, "");
             String lastName = prefs.get(Configs.lastname, "");
@@ -60,7 +60,7 @@ public class NetworkCalls {
                     .field("last_name", lastName)
                     .field("logoutTime", timeLoggedOut)
                     .field("loginTime", 0)
-                    .field("dateLoggedIn", Configs.dateLoggedIn())
+                    .field("dateLoggedIn", Configs.currentSystemDate())
                     .field("empCode", prefs.get("empCode", ""))
                     .field("emp_branch", prefs.get("empBranch", ""))
                     .field("isLoggedIn", false)
@@ -98,7 +98,7 @@ public class NetworkCalls {
                             .field("empCode", empCode)
                             .field("loginTime", loginTime)
                             .field("logoutTime", 0)
-                            .field("dateLoggedIn", Configs.dateLoggedIn())
+                            .field("dateLoggedIn", Configs.currentSystemDate())
                             .field("isLoggedIn", isLoggedIn)
                             .field("emp_branch", prefs.get("empBranch", "")).asJson();
             if (((JsonNode) sessionTimeRenew.getBody()).getObject().getBoolean("success")) {
@@ -116,7 +116,7 @@ public class NetworkCalls {
     /**
      * Sends supervisor logout time.
      */
-    static void sendSupervisorLogoutTime(Preferences prefs, Long timeLoggedOut, String empCode) {
+    static void sendSupervisorLogoutTime(Preferences prefs, String timeLoggedOut, String empCode) {
         try {
             String firstName = prefs.get(Configs.username, "");
             String lastName = prefs.get(Configs.lastname, "");
@@ -135,7 +135,7 @@ public class NetworkCalls {
                     .field("logoutTime", timeLoggedOut)
                     .field("loginTime", 0)
                     .field("empCode", empCode)
-                    .field("dateLoggedIn", Configs.dateLoggedIn())
+                    .field("dateLoggedIn", Configs.currentSystemDate())
                     .field("emp_branch", prefs.get("empBranch", ""))
                     .field("isLoggedIn", false)
                     .field("isSuperVisor", true).asJson();
@@ -157,7 +157,7 @@ public class NetworkCalls {
             Unirest.post(prefs.get("BASE_URL", "") + "/fingerprintCore/fingerprint/lateEmployees")
                     .field("isLate", false)
                     .field("time", timeLoggedIn)
-                    .field("date", Configs.dateLoggedIn())
+                    .field("date", Configs.currentSystemDate())
                     .field("empCode", empCode).asJson();
         } catch (UnirestException ex) {
             Logger.getLogger(NetworkCalls.class.getName()).log(Level.SEVERE, null, ex);

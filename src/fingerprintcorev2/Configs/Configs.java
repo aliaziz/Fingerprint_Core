@@ -109,7 +109,7 @@ public class Configs
      * Returns time logged in
      * @return 
      */
-    public String timeLoggedIn() {
+    public String currentSystemTime() {
         Date date = new Date();
         SimpleDateFormat formatter = new SimpleDateFormat("hh:mm");
         return formatter.format(date);
@@ -119,7 +119,7 @@ public class Configs
      * Returns date logged In
      * @return 
      */
-    public static String dateLoggedIn() {
+    public static String currentSystemDate() {
         Date date = new Date();
         SimpleDateFormat formatter = new SimpleDateFormat("dd-MM-yyyy");
         return formatter.format(date);

@@ -12,6 +12,7 @@ import java.awt.image.MemoryImageSource;
 import java.net.URL;
 import java.net.URLConnection;
 import java.sql.Timestamp;
+import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -104,10 +105,24 @@ public class Configs
         }));
     }
 
+    /**
+     * Returns time logged in
+     * @return 
+     */
     public String timeLoggedIn() {
         Date date = new Date();
-        String timeLoggedIn = String.valueOf(new Timestamp(date.getTime()));
-        return timeLoggedIn;
+        SimpleDateFormat formatter = new SimpleDateFormat("hh:mm");
+        return formatter.format(date);
+    }
+    
+    /**
+     * Returns date logged In
+     * @return 
+     */
+    public static String dateLoggedIn() {
+        Date date = new Date();
+        SimpleDateFormat formatter = new SimpleDateFormat("dd-MM-yyyy");
+        return formatter.format(date);
     }
 
     public static void notifyUser(Component component, String message) {

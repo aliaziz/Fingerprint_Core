@@ -501,30 +501,10 @@ public class RescanUI extends javax.swing.JFrame implements fpLibrary {
     }
 
     private void sendLogInTime() {
-        try {
-            HttpResponse<JsonNode> sessionTimeRenew = Unirest.post(prefs.get("BASE_URL", "")
-                    + "/fingerprintCore/timeAtWork")
-                    .field("first_name", usernameStored)
-                    .field("last_name", lastnameStored)
-                    .field("empCode", empCode)
-                    .field("loginTime", configs.timeLoggedIn())
-                    .field("logoutTime", 0)
-                    .field("isLoggedIn", Boolean.valueOf(true))
-                    .field("emp_branch", prefs.get("empBranch", ""))
-                    .field("isSuperVisor", isSupervisor).asJson();
-
-            
-            if (((JsonNode) sessionTimeRenew.getBody()).getObject().getBoolean("success")) {
-                postUserDetails();
-            } else {
-                Configs.notifyUser(this, "Failed to login.Contact Admin");
-            }
-
-            System.out.print("Session from server " + ((JsonNode) sessionTimeRenew.getBody()).getObject() + " " + prefs.get("BASE_URL", ""));
-        } catch (UnirestException ex) {
-            Logger.getLogger(RescanUI.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (JSONException ex) {
-            Logger.getLogger(RescanUI.class.getName()).log(Level.SEVERE, null, ex);
+        if (NetworkCalls.sendUserLoginTime(prefs, configs.timeLoggedIn(), true)) {
+            goToWelcomepage();
+        } else {
+            Configs.notifyUser(this, "Failed to login.Contact Admin");
         }
     }
 
@@ -558,112 +538,52 @@ public class RescanUI extends javax.swing.JFrame implements fpLibrary {
         }
     }
 
-    private void postUserDetails() {
-        try {
-            HttpResponse<JsonNode> postData = Unirest.post(prefs.get("BASE_URL", "") 
-                    + "/fingerprintCore/userLoginDetails")
-                    .field("empCode", empCode)
-                    .field("isLoggedIn", Boolean.valueOf(true)).asJson();
-
-            if (((JsonNode) postData.getBody()).getObject().getBoolean("success")) {
-                goToWelcomepage();
-            } else {
-                Configs.notifyUser(this, "Failed to login.Contact Admin");
-            }
-        } catch (UnirestException ex) {
-            Logger.getLogger(RescanUI.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (JSONException ex) {
-            Logger.getLogger(RescanUI.class.getName()).log(Level.SEVERE, null, ex);
-        }
-    }
-
     private void setUserFalseLoggedIn() {
-        try {
-            HttpResponse<JsonNode> postData = Unirest.post(prefs.get("BASE_URL", "") + "/fingerprintCore/userLoginDetails").field("empCode", empCode).field("isLoggedIn", Boolean.valueOf(false)).asJson();
-            HttpResponse<JsonNode> sessionTimeRenew = Unirest.post(prefs.get("BASE_URL", "") + "/fingerprintCore/timeAtWork").field("first_name", usernameStored).field("last_name", lastnameStored).field("empCode", empCode).field("loginTime", configs.timeLoggedIn()).field("isLoggedIn", Boolean.valueOf(false)).field("emp_branch", prefs.get("empBranch", "")).asJson();
-            if (((JsonNode) postData.getBody()).getObject().getBoolean("success")) {
-                start();
-                System.out.println("sending loggin as false");
-                getFingerprintFromServer(empCode);
-                fpLibrary.INSTANCE.GenFpChar();
-            } else {
-                Configs.notifyUser(this, "Failed to login.Contact Admin");
-            }
-        } catch (UnirestException ex) {
-            Logger.getLogger(RescanUI.class.getName()).log(Level.SEVERE, null, ex);
-            Configs.notifyUser(this, "Check server connection");
-        } catch (JSONException ex) {
-            Logger.getLogger(RescanUI.class.getName()).log(Level.SEVERE, null, ex);
+        if (NetworkCalls.sendUserLoginTime(prefs, configs.timeLoggedIn(), false)){
+            start();
+            getFingerprintFromServer(empCode);
+            fpLibrary.INSTANCE.GenFpChar();
+        }else {
+            Configs.notifyUser(this, "Failed to login.Contact Admin");
         }
     }
 
     private void checkIfComputerHasUserLoggedInToday() {
-        sendLoginAgainTime();
-//        if ((dateLoggedIn == null) || (dateLoggedIn.isEmpty())) {
-//
-//            getUserLoginDetails();
-//            System.out.println("*** comp has no prefs ***");
-//        } else {
-//            try {
-//                System.out.println(prefs.get("dateLoggedIn", ""));
-//                DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
-//                Date date = new Date();
-//
-//                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
-//                Date savedDate = sdf.parse(prefs.get("dateLoggedIn", ""));
-//                Date dateToday = sdf.parse(dateFormat.format(date));
-//
-//                System.out.println(sdf.format(savedDate));
-//                System.out.println(sdf.format(dateToday));
-//
-//                if (savedDate.compareTo(dateToday) == 0) {
-//                    System.out.println("*** date is today ***");
-//                    System.out.println("Date1 is equal to Date2");
-//                    String userWantingToLogin = dateFormat.format(date) + ":" + empCode;
-//                    String userAlreadyLoggedIn = prefs.get("dateLoggedInWithEmpcode", "");
-//                    System.out.println(userAlreadyLoggedIn + " " + userWantingToLogin + " " + prefs.get("dateLoggedIn", "") + " ====" + prefs.get("dateLoggedInWithEmpcode", ""));
-//
-//                    if (userAlreadyLoggedIn.equalsIgnoreCase(userWantingToLogin)) {
-//                        sendLoginAgainTime();
-//                    } else {
-//                        Configs.notifyUser(this, "Computer already being used by someone");
-//                    }
-//                } else {
-//                    getUserLoginDetails();
-//                }
-//            } catch (java.text.ParseException ex) {
-//                Logger.getLogger(RescanUI.class.getName()).log(Level.SEVERE, null, ex);
-//            }
-//        }
-    }
+        if ((dateLoggedIn == null) || (dateLoggedIn.isEmpty())) {
 
-    private void sendLoginAgainTime() {
-        try {
-            HttpResponse<JsonNode> sessionTimeRenew = 
-                    Unirest.post(prefs.get("BASE_URL", "") + "/fingerprintCore/timeAtWork")
-                            .field("first_name", usernameStored)
-                            .field("last_name", lastnameStored)
-                            .field("empCode", empCode)
-                            .field("loginTime", configs.timeLoggedIn())
-                            .field("logoutTime", 0)
-                            .field("isLoggedIn", Boolean.valueOf(true))
-                            .field("emp_branch", prefs.get("empBranch", ""))
-                            .field("isSuperVisor", isSupervisor).asJson();
+            getUserLoginDetails();
+            System.out.println("*** comp has no prefs ***");
+        } else {
+            try {
+                System.out.println(prefs.get("dateLoggedIn", ""));
+                DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+                Date date = new Date();
 
-             Unirest.post(prefs.get("BASE_URL", "") + "/fingerprintCore/userLoginDetails")
-                     .field("empCode", empCode)
-                     .field("isLoggedIn", Boolean.valueOf(true)).asJson();
+                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+                Date savedDate = sdf.parse(prefs.get("dateLoggedIn", ""));
+                Date dateToday = sdf.parse(dateFormat.format(date));
 
-             System.out.println((JsonNode) sessionTimeRenew.getBody());
-            if (((JsonNode) sessionTimeRenew.getBody()).getObject().getBoolean("success")) {
-                goToWelcomepage();
-            } else {
-                Configs.notifyUser(this, "Failed to login.Contact Admin");
+                System.out.println(sdf.format(savedDate));
+                System.out.println(sdf.format(dateToday));
+
+                if (savedDate.compareTo(dateToday) == 0) {
+                    System.out.println("*** date is today ***");
+                    System.out.println("Date1 is equal to Date2");
+                    String userWantingToLogin = dateFormat.format(date) + ":" + empCode;
+                    String userAlreadyLoggedIn = prefs.get("dateLoggedInWithEmpcode", "");
+                    System.out.println(userAlreadyLoggedIn + " " + userWantingToLogin + " " + prefs.get("dateLoggedIn", "") + " ====" + prefs.get("dateLoggedInWithEmpcode", ""));
+
+                    if (userAlreadyLoggedIn.equalsIgnoreCase(userWantingToLogin)) {
+                        sendLogInTime();
+                    } else {
+                        Configs.notifyUser(this, "Computer already being used by someone");
+                    }
+                } else {
+                    getUserLoginDetails();
+                }
+            } catch (java.text.ParseException ex) {
+                Logger.getLogger(RescanUI.class.getName()).log(Level.SEVERE, null, ex);
             }
-        } catch (UnirestException ex) {
-            Logger.getLogger(RescanUI.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (JSONException ex) {
-            Logger.getLogger(RescanUI.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
 

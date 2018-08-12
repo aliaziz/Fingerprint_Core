@@ -14,6 +14,7 @@ import fingerprintcorev2.Configs.Configs;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.prefs.Preferences;
+import org.json.JSONException;
 
 /**
  *
@@ -23,6 +24,9 @@ public class NetworkCalls {
 
     /**
      * Sends alerts when user is logged out for more than an hour
+     * @param pref
+     * @param currentDay
+     * @param hoursAway
      */
     public static void sendLogoutAlert(Preferences pref, String currentDay, String hoursAway) {
         try {
@@ -56,6 +60,7 @@ public class NetworkCalls {
                     .field("last_name", lastName)
                     .field("logoutTime", timeLoggedOut)
                     .field("loginTime", 0)
+                    .field("dateLoggedIn", Configs.dateLoggedIn())
                     .field("empCode", prefs.get("empCode", ""))
                     .field("emp_branch", prefs.get("empBranch", ""))
                     .field("isLoggedIn", false)
@@ -64,6 +69,48 @@ public class NetworkCalls {
             Logger.getLogger(NetworkCalls.class.getName()).log(Level.SEVERE, null, ex);
         }
 
+    }
+    
+    /**
+     * Sends user login time and session time
+     * @param prefs
+     * @param loginTime
+     * @param isLoggedIn
+     * @return 
+     */
+    static Boolean sendUserLoginTime(Preferences prefs, String loginTime,
+            Boolean isLoggedIn) {
+        
+        try {
+            String firstName = prefs.get(Configs.username, "");
+            String lastName = prefs.get(Configs.lastname, "");
+            String empCode = prefs.get("empCode", "");
+            
+            HttpResponse<JsonNode> postData = Unirest.post(prefs.get("BASE_URL", "")
+                    + "/fingerprintCore/userLoginDetails")
+                    .field("empCode", empCode)
+                    .field("isLoggedIn", isLoggedIn).asJson();
+
+            HttpResponse<JsonNode> sessionTimeRenew
+                    = Unirest.post(prefs.get("BASE_URL", "") + "/fingerprintCore/timeAtWork")
+                            .field("first_name", firstName)
+                            .field("last_name", lastName)
+                            .field("empCode", empCode)
+                            .field("loginTime", loginTime)
+                            .field("logoutTime", 0)
+                            .field("dateLoggedIn", Configs.dateLoggedIn())
+                            .field("isLoggedIn", isLoggedIn)
+                            .field("emp_branch", prefs.get("empBranch", "")).asJson();
+            if (((JsonNode) sessionTimeRenew.getBody()).getObject().getBoolean("success")) {
+                sendLateDetails(empCode, prefs, loginTime);
+                return ((JsonNode) postData.getBody()).getObject().getBoolean("success");
+            } else {
+                return false;
+            }
+        } catch (UnirestException | JSONException ex) {
+            Logger.getLogger(NetworkCalls.class.getName()).log(Level.SEVERE, null, ex);
+            return false;
+        }
     }
 
     /**
@@ -78,20 +125,42 @@ public class NetworkCalls {
                     .field("first_name", firstName)
                     .field("last_name", lastName)
                     .field("logoutTime", timeLoggedOut)
+                    .field("loginTime", 0)
                     .field("empCode", empCode)
-                    .field("isSuperVisor", Boolean.valueOf(true)).asJson();
+                    .field("isSuperVisor", true).asJson();
             
             Unirest.post(prefs.get("BASE_URL", "") + "/fingerprintCore/timeAtWorkSupervisor")
                     .field("first_name", firstName)
                     .field("last_name", lastName)
                     .field("logoutTime", timeLoggedOut)
+                    .field("loginTime", 0)
                     .field("empCode", empCode)
+                    .field("dateLoggedIn", Configs.dateLoggedIn())
                     .field("emp_branch", prefs.get("empBranch", ""))
-                    .field("isLoggedIn", Boolean.valueOf(false))
-                    .field("isSuperVisor", Boolean.valueOf(true)).asJson();
+                    .field("isLoggedIn", false)
+                    .field("isSuperVisor", true).asJson();
         } catch (UnirestException ex) {
             Logger.getLogger(NetworkCalls.class.getName()).log(Level.SEVERE, null, ex);
         }
 
+    }
+    
+    /**
+     * Sends details about if employee is late or not
+     * @param empCode
+     * @param prefs
+     * @param timeLoggedIn 
+     */
+    private static void sendLateDetails(String empCode, Preferences prefs, String timeLoggedIn) {
+        System.out.println("sending late details...");
+        try {
+            Unirest.post(prefs.get("BASE_URL", "") + "/fingerprintCore/fingerprint/lateEmployees")
+                    .field("isLate", false)
+                    .field("time", timeLoggedIn)
+                    .field("date", Configs.dateLoggedIn())
+                    .field("empCode", empCode).asJson();
+        } catch (UnirestException ex) {
+            Logger.getLogger(NetworkCalls.class.getName()).log(Level.SEVERE, null, ex);
+        }
     }
 }

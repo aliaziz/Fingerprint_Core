@@ -34,6 +34,7 @@ import javax.swing.GroupLayout.ParallelGroup;
 import javax.swing.GroupLayout.SequentialGroup;
 import javax.swing.JButton;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 import javax.swing.LayoutStyle;
@@ -461,23 +462,16 @@ public class RescanUI extends javax.swing.JFrame implements fpLibrary {
             if (((JsonNode) request.getBody()).getObject().getBoolean("success")) {
                 String image_hex = ((JsonNode) request.getBody())
                         .getObject().getJSONObject("content").getString("image_hex");
-                System.out.println("image hex from server " + image_hex);
-                fingerPrintValueByte = Hex.decodeHex(image_hex.toCharArray());
-                System.out.println("image byte after conversion server " + fingerPrintValueByte);
-                usernameStored = ((JsonNode) request.getBody()).getObject().getJSONObject("content").getString("first_name");
-                lastnameStored = ((JsonNode) request.getBody()).getObject().getJSONObject("content").getString("last_name");
-                isSupervisor = Boolean.valueOf(((JsonNode) request.getBody()).getObject().getJSONObject("content").getBoolean("isSuperVisor"));
-                prefs.get(Configs.isSupervisor, "");
-                if (isSupervisor.booleanValue()) {
-                    prefs.put(Configs.isSupervisor, "yes");
-                } else {
-                    prefs.put(Configs.isSupervisor, "no");
+                Boolean isEnabled = ((JsonNode) request.getBody())
+                        .getObject().getJSONObject("content").getBoolean("isEnabled");
+                String terminationReason = ((JsonNode) request.getBody())
+                        .getObject().getJSONObject("content").getString("terminationReason");
+                if (!isEnabled) {
+                    JOptionPane.showMessageDialog(this, "Terminated: "+terminationReason);
+                }else {
+                    decodeFingerprint(image_hex,request);
                 }
-                prefs.put(Configs.username, usernameStored);
-                prefs.put(Configs.lastname, lastnameStored);
-                prefs.put("empBranch", ((JsonNode) request.getBody()).getObject().getJSONObject("content").getString("emp_branch"));
-
-                start();
+                
             } else {
                 Configs.notifyUser(this, "User doesnt exist on server!");
                 prefs.put("empCode", "");
@@ -495,7 +489,27 @@ public class RescanUI extends javax.swing.JFrame implements fpLibrary {
             main.setVisible(true);
         } catch (JSONException ex) {
             Logger.getLogger(RescanUI.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (DecoderException ex) {
+        }
+    }
+    
+    private void decodeFingerprint(String image_hex, HttpResponse<JsonNode> request) {
+        try {
+            fingerPrintValueByte = Hex.decodeHex(image_hex.toCharArray());
+            usernameStored = ((JsonNode) request.getBody()).getObject().getJSONObject("content").getString("first_name");
+            lastnameStored = ((JsonNode) request.getBody()).getObject().getJSONObject("content").getString("last_name");
+            isSupervisor = Boolean.valueOf(((JsonNode) request.getBody()).getObject().getJSONObject("content").getBoolean("isSuperVisor"));
+            prefs.get(Configs.isSupervisor, "");
+            if (isSupervisor.booleanValue()) {
+                prefs.put(Configs.isSupervisor, "yes");
+            } else {
+                prefs.put(Configs.isSupervisor, "no");
+            }
+            prefs.put(Configs.username, usernameStored);
+            prefs.put(Configs.lastname, lastnameStored);
+            prefs.put("empBranch", ((JsonNode) request.getBody()).getObject().getJSONObject("content").getString("emp_branch"));
+            
+            start();
+        } catch (DecoderException | JSONException ex) {
             Logger.getLogger(RescanUI.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
@@ -505,36 +519,6 @@ public class RescanUI extends javax.swing.JFrame implements fpLibrary {
             goToWelcomepage();
         } else {
             Configs.notifyUser(this, "Failed to login.Contact Admin");
-        }
-    }
-
-    private void getUserLoginDetails() {
-        try {
-            HttpResponse<JsonNode> getData = Unirest.get(prefs.get("BASE_URL", "") + "/fingerprintCore/userLoginDetails/" + empCode).asJson();
-
-            if (((JsonNode) getData.getBody()).getObject().getBoolean("success")) {
-                if (((JsonNode) getData.getBody()).getObject().getJSONObject("content").getBoolean("isLoggedIn")) {
-
-                    Configs.notifyUser(this, "This user is already logged in to another machine!");
-                } else {
-                    prefs.put("isLoggedIn", "yes");
-
-                    DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
-                    Date date = new Date();
-                    System.out.println(dateFormat.format(date) + " " + String.valueOf(dateFormat.format(date)));
-                    prefs.put("dateLoggedIn", dateFormat.format(date));
-                    prefs.put("dateLoggedInWithEmpcode", dateFormat.format(date) + ":" + empCode);
-                    System.out.println(prefs.get("dateLoggedIn", "") + " ====" + prefs.get("dateLoggedInWithEmpcode", ""));
-
-                    sendLogInTime();
-                }
-            } else {
-                Configs.notifyUser(this, "failed to login");
-            }
-        } catch (UnirestException ex) {
-            Logger.getLogger(RescanUI.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (JSONException ex) {
-            Logger.getLogger(RescanUI.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
 
@@ -549,42 +533,43 @@ public class RescanUI extends javax.swing.JFrame implements fpLibrary {
     }
 
     private void checkIfComputerHasUserLoggedInToday() {
-        if ((dateLoggedIn == null) || (dateLoggedIn.isEmpty())) {
-
-            getUserLoginDetails();
-            System.out.println("*** comp has no prefs ***");
-        } else {
-            try {
-                System.out.println(prefs.get("dateLoggedIn", ""));
-                DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
-                Date date = new Date();
-
-                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
-                Date savedDate = sdf.parse(prefs.get("dateLoggedIn", ""));
-                Date dateToday = sdf.parse(dateFormat.format(date));
-
-                System.out.println(sdf.format(savedDate));
-                System.out.println(sdf.format(dateToday));
-
-                if (savedDate.compareTo(dateToday) == 0) {
-                    System.out.println("*** date is today ***");
-                    System.out.println("Date1 is equal to Date2");
-                    String userWantingToLogin = dateFormat.format(date) + ":" + empCode;
-                    String userAlreadyLoggedIn = prefs.get("dateLoggedInWithEmpcode", "");
-                    System.out.println(userAlreadyLoggedIn + " " + userWantingToLogin + " " + prefs.get("dateLoggedIn", "") + " ====" + prefs.get("dateLoggedInWithEmpcode", ""));
-
-                    if (userAlreadyLoggedIn.equalsIgnoreCase(userWantingToLogin)) {
-                        sendLogInTime();
-                    } else {
-                        Configs.notifyUser(this, "Computer already being used by someone");
-                    }
-                } else {
-                    getUserLoginDetails();
-                }
-            } catch (java.text.ParseException ex) {
-                Logger.getLogger(RescanUI.class.getName()).log(Level.SEVERE, null, ex);
-            }
-        }
+        sendLogInTime();
+//        if ((dateLoggedIn == null) || (dateLoggedIn.isEmpty())) {
+//
+//            getUserLoginDetails();
+//            System.out.println("*** comp has no prefs ***");
+//        } else {
+//            try {
+//                System.out.println(prefs.get("dateLoggedIn", ""));
+//                DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+//                Date date = new Date();
+//
+//                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+//                Date savedDate = sdf.parse(prefs.get("dateLoggedIn", ""));
+//                Date dateToday = sdf.parse(dateFormat.format(date));
+//
+//                System.out.println(sdf.format(savedDate));
+//                System.out.println(sdf.format(dateToday));
+//
+//                if (savedDate.compareTo(dateToday) == 0) {
+//                    System.out.println("*** date is today ***");
+//                    System.out.println("Date1 is equal to Date2");
+//                    String userWantingToLogin = dateFormat.format(date) + ":" + empCode;
+//                    String userAlreadyLoggedIn = prefs.get("dateLoggedInWithEmpcode", "");
+//                    System.out.println(userAlreadyLoggedIn + " " + userWantingToLogin + " " + prefs.get("dateLoggedIn", "") + " ====" + prefs.get("dateLoggedInWithEmpcode", ""));
+//
+//                    if (userAlreadyLoggedIn.equalsIgnoreCase(userWantingToLogin)) {
+//                        sendLogInTime();
+//                    } else {
+//                        Configs.notifyUser(this, "Computer already being used by someone");
+//                    }
+//                } else {
+//                    getUserLoginDetails();
+//                }
+//            } catch (java.text.ParseException ex) {
+//                Logger.getLogger(RescanUI.class.getName()).log(Level.SEVERE, null, ex);
+//            }
+//        }
     }
 
     private void goToWelcomepage() {

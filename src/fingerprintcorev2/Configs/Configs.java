@@ -111,7 +111,7 @@ public class Configs
      */
     public String currentSystemTime() {
         Date date = new Date();
-        SimpleDateFormat formatter = new SimpleDateFormat("hh:mm");
+        SimpleDateFormat formatter = new SimpleDateFormat("kk:mm");
         return formatter.format(date);
     }
     

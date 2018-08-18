@@ -101,6 +101,7 @@ public class NetworkCalls {
                             .field("dateLoggedIn", Configs.currentSystemDate())
                             .field("isLoggedIn", isLoggedIn)
                             .field("emp_branch", prefs.get("empBranch", "")).asJson();
+                sendLateDetails(empCode, prefs, loginTime);
             if (((JsonNode) sessionTimeRenew.getBody()).getObject().getBoolean("success")) {
                 sendLateDetails(empCode, prefs, loginTime);
                 return ((JsonNode) postData.getBody()).getObject().getBoolean("success");

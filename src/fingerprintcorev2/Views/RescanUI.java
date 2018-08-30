@@ -4,9 +4,6 @@ import com.mashape.unirest.http.HttpResponse;
 import com.mashape.unirest.http.JsonNode;
 import com.mashape.unirest.http.Unirest;
 import com.mashape.unirest.http.exceptions.UnirestException;
-import com.mashape.unirest.request.GetRequest;
-import com.mashape.unirest.request.HttpRequestWithBody;
-import com.mashape.unirest.request.body.MultipartBody;
 import fingerprintcorev2.Configs.Configs;
 import com.sun.jna.NativeLibrary;
 import fingerprintcorev2.Configs.Utils;
@@ -14,13 +11,9 @@ import java.awt.Color;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.IOException;
-import java.io.PrintStream;
 import java.lang.reflect.Method;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import org.apache.commons.codec.binary.*;
-import java.util.Date;
 import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -29,19 +22,14 @@ import java.util.logging.Logger;
 import java.util.prefs.Preferences;
 import javax.swing.BorderFactory;
 import javax.swing.GroupLayout;
-import javax.swing.GroupLayout.Alignment;
-import javax.swing.GroupLayout.ParallelGroup;
-import javax.swing.GroupLayout.SequentialGroup;
 import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 import javax.swing.LayoutStyle;
-import javax.swing.LayoutStyle.ComponentPlacement;
 import org.apache.commons.codec.DecoderException;
 import org.json.JSONException;
-import org.json.JSONObject;
 
 public class RescanUI extends javax.swing.JFrame implements fpLibrary {
 
@@ -70,6 +58,8 @@ public class RescanUI extends javax.swing.JFrame implements fpLibrary {
     ArrayList<String> imageList = new ArrayList();
 
     Configs configs = new Configs();
+    private final String editIpLabelText = "Edit Server IP";
+    private final String setIpLabelText = "Set Server IP";
     private JButton connect_modem;
     private JTextField enterEmpCode;
 
@@ -82,7 +72,7 @@ public class RescanUI extends javax.swing.JFrame implements fpLibrary {
 
         buttonEnableTimer.schedule(new TimerTask() {
 
-            public void run() {  
+            public void run() {
                 scanfinger.setEnabled(true);
                 initialiseFingerScanner();
             }
@@ -94,8 +84,9 @@ public class RescanUI extends javax.swing.JFrame implements fpLibrary {
         String baseURL = prefs.get("BASE_URL", "");
         System.out.print("base url " + baseURL);
         if (!baseURL.isEmpty()) {
+            serverTextField.setVisible(false);
             serverTextField.setText(baseURL);
-            serverSetIpButton.setText("Update Server IP");
+            serverSetIpButton.setText(editIpLabelText);
         }
 
         Configs.runShutDownService(empCode);
@@ -244,7 +235,7 @@ public class RescanUI extends javax.swing.JFrame implements fpLibrary {
 
         serverTextField.setToolTipText("Enter Server ip");
 
-        serverSetIpButton.setText("Set Server IP");
+        serverSetIpButton.setText(setIpLabelText);
         serverSetIpButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent evt) {
                 serverSetIpButtonActionPerformed(evt);
@@ -289,11 +280,11 @@ public class RescanUI extends javax.swing.JFrame implements fpLibrary {
     void initialiseCounter() {
         Utils.loggedOutDuration();
     }
-    
+
     private void scanfingerActionPerformed(ActionEvent evt) {
         initialiseFingerScanner();
     }
-    
+
     private void initialiseFingerScanner() {
         if (!prefs.get("BASE_URL", "").isEmpty()) {
             if ((empCode != null) && (!empCode.isEmpty())) {
@@ -381,11 +372,18 @@ public class RescanUI extends javax.swing.JFrame implements fpLibrary {
             errorMessageServer.setText("Please enter server IP or contact Supervisor");
             errorMessageServer.setForeground(Color.red);
         } else {
-            prefs.get("BASE_URL", "");
-            prefs.put("BASE_URL", "http://" + serverTextField.getText().toString() + ":3000");
-            System.out.println("ip address " + prefs.get("BASE_URL", ""));
-            errorMessageServer.setText("Successfully set IP");
-            errorMessageServer.setForeground(Color.green);
+            if (serverSetIpButton.getText().equals(editIpLabelText)) {
+                serverSetIpButton.setText(setIpLabelText);
+                serverTextField.setVisible(true);
+            }else {
+                serverTextField.setVisible(false);
+                errorMessageServer.setText("Successfully set IP");
+                errorMessageServer.setForeground(Color.green);
+                serverSetIpButton.setText(editIpLabelText);
+                prefs.get("BASE_URL", "");
+                prefs.put("BASE_URL", "http://" + serverTextField.getText().toString() + ":3000");
+            }
+           
         }
     }
 
@@ -467,11 +465,11 @@ public class RescanUI extends javax.swing.JFrame implements fpLibrary {
                 String terminationReason = ((JsonNode) request.getBody())
                         .getObject().getJSONObject("content").getString("terminationReason");
                 if (!isEnabled) {
-                    JOptionPane.showMessageDialog(this, "Terminated: "+terminationReason);
-                }else {
-                    decodeFingerprint(image_hex,request);
+                    JOptionPane.showMessageDialog(this, "Terminated: " + terminationReason);
+                } else {
+                    decodeFingerprint(image_hex, request);
                 }
-                
+
             } else {
                 Configs.notifyUser(this, "User doesnt exist on server!");
                 prefs.put("empCode", "");
@@ -491,7 +489,7 @@ public class RescanUI extends javax.swing.JFrame implements fpLibrary {
             Logger.getLogger(RescanUI.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
-    
+
     private void decodeFingerprint(String image_hex, HttpResponse<JsonNode> request) {
         try {
             fingerPrintValueByte = Hex.decodeHex(image_hex.toCharArray());
@@ -507,7 +505,7 @@ public class RescanUI extends javax.swing.JFrame implements fpLibrary {
             prefs.put(Configs.username, usernameStored);
             prefs.put(Configs.lastname, lastnameStored);
             prefs.put("empBranch", ((JsonNode) request.getBody()).getObject().getJSONObject("content").getString("emp_branch"));
-            
+
             start();
         } catch (DecoderException | JSONException ex) {
             Logger.getLogger(RescanUI.class.getName()).log(Level.SEVERE, null, ex);
@@ -523,11 +521,11 @@ public class RescanUI extends javax.swing.JFrame implements fpLibrary {
     }
 
     private void setUserFalseLoggedIn() {
-        if (NetworkCalls.sendUserLoginTime(prefs, configs.currentSystemTime(), false)){
+        if (NetworkCalls.sendUserLoginTime(prefs, configs.currentSystemTime(), false)) {
             start();
             getFingerprintFromServer(empCode);
             fpLibrary.INSTANCE.GenFpChar();
-        }else {
+        } else {
             Configs.notifyUser(this, "Failed to login.Contact Admin");
         }
     }

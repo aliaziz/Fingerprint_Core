@@ -9,8 +9,6 @@ import fingerprintcorev2.Configs.Configs;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.event.ActionEvent;
-import java.sql.Timestamp;
-import java.util.Date;
 import java.util.List;
 import java.util.Timer;
 import java.util.logging.Level;
@@ -28,7 +26,7 @@ import org.json.JSONException;
 public class HomeUI extends javax.swing.JFrame {
 
     private static Preferences prefs;
-    private Timer timer = new Timer();
+    private Timer timer;
     String usernameStored;
     String lastnameStored;
     String isLoggedIn;
@@ -41,16 +39,19 @@ public class HomeUI extends javax.swing.JFrame {
     byte[] fingerPrintValueByteEmpty = new byte[100];
     int fingerPrintValueByteSize;
     int fingerPrintValueByteSizeEmpty;
-    Boolean isSupervisor = Boolean.valueOf(true);
-    private byte[] matbuf = new byte[100];
-    private int[] matsize = new int[1];
+    Boolean isSupervisor = true;
+    private byte[] matbuf;
+    private int[] matsize;
 
-    int[] randomeTime = {36000};
+    int[] randomeTime = {3600000};
     Configs configs = new Configs();
     List<String> supervisorBranchesList = new java.util.ArrayList();
     private JLabel fingeprintImage;
 
     public HomeUI() {
+        this.matsize = new int[1];
+        this.matbuf = new byte[100];
+        this.timer = new Timer();
         initComponents();
         prefs = Preferences.userRoot().node("FingerprintClass");
         usernameStored = prefs.get(Configs.username, "");

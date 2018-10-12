@@ -418,10 +418,9 @@ public class RescanUI extends javax.swing.JFrame implements fpLibrary {
                     fpLibrary.INSTANCE.GetFpCharByGen(matbuf, matsize);
 
                     int ret = fpLibrary.INSTANCE.MatchTemplateOne(matbuf, fingerPrintValueByte, fingerPrintValueByteSize);
-                    System.out.println("Match Val : " + String.valueOf(ret));
 
                     if (ret < 50) {
-                        statusMessage.setText("Finger print doesnt exist");
+                        statusMessage.setText("Fingerprint doesnt match");
                     } else {
                         statusMessage.setText("Finger match found!");
 

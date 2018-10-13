@@ -5,16 +5,17 @@ import com.mashape.unirest.http.JsonNode;
 import com.mashape.unirest.http.Unirest;
 import com.mashape.unirest.http.exceptions.UnirestException;
 import fingerprintcorev2.Configs.Configs;
-import com.sun.jna.NativeLibrary;
 import fingerprintcorev2.Configs.Utils;
 import java.awt.Color;
 import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
-import java.lang.reflect.Method;
 import java.util.ArrayList;
 import org.apache.commons.codec.binary.*;
-import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.logging.Level;
@@ -23,6 +24,7 @@ import java.util.prefs.Preferences;
 import javax.swing.BorderFactory;
 import javax.swing.GroupLayout;
 import javax.swing.JButton;
+import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
@@ -31,7 +33,7 @@ import javax.swing.LayoutStyle;
 import org.apache.commons.codec.DecoderException;
 import org.json.JSONException;
 
-public class RescanUI extends javax.swing.JFrame implements fpLibrary {
+public class RescanUI extends javax.swing.JFrame {
 
     java.awt.Image img;
     private static Preferences prefs;
@@ -43,8 +45,8 @@ public class RescanUI extends javax.swing.JFrame implements fpLibrary {
     byte[] fingerPrintValueByteEmpty = new byte[255];
     int fingerPrintValueByteSize;
     int fingerPrintValueByteSizeEmpty;
-    private byte[] matbuf = new byte[100];
-    private int[] matsize = new int[1];
+    private final byte[] matbuf = new byte[255];
+    private final int[] matsize = new int[1];
     String usernameStored;
     String lastnameStored;
     String empCode;
@@ -55,23 +57,27 @@ public class RescanUI extends javax.swing.JFrame implements fpLibrary {
     JTextField txt;
     String image_hex_code;
     Boolean isSupervisor;
-    ArrayList<String> imageList = new ArrayList();
+    ArrayList<String> imageList = new ArrayList<>();
+    private final ArrayList<String> returnedIps = new ArrayList<>();
+    private final ArrayList<String> ipNames = new ArrayList<>();
+    private ArrayList<String> ipAddresses = new ArrayList<>();
+    private final String fileName = "ConfigFingerPrint.txt";
+    private ArrayList<String> ipsFromFile = new ArrayList<>();
 
     Configs configs = new Configs();
-    private final String editIpLabelText = "Edit Server IP";
-    private final String setIpLabelText = "Set Server IP";
     private JButton connect_modem;
     private JTextField enterEmpCode;
-
+   
     public RescanUI() {
-        setUndecorated(true);
-        setExtendedState(6);
+//        setUndecorated(true);
+//        setExtendedState(6);
         initComponents();
-        setAlwaysOnTop(true);
-        setDefaultCloseOperation(0);
+//        setAlwaysOnTop(true);
+//        setDefaultCloseOperation(0);
 
         buttonEnableTimer.schedule(new TimerTask() {
 
+            @Override
             public void run() {
                 scanfinger.setEnabled(true);
                 initialiseFingerScanner();
@@ -86,8 +92,14 @@ public class RescanUI extends javax.swing.JFrame implements fpLibrary {
         if (!baseURL.isEmpty()) {
             serverTextField.setVisible(false);
             serverTextField.setText(baseURL);
-            serverSetIpButton.setText(editIpLabelText);
         }
+
+        readIps();
+        serverSetIpButton.addActionListener((ActionEvent e) -> {
+            int ipIndex = serverSetIpButton.getSelectedIndex();
+            prefs.get("BASE_URL", "");
+            prefs.put(Configs.BASE_URL, "http://" + ((String) ipAddresses.get(ipIndex)).replaceAll(" ", "") + ":3000");
+        });
 
         Configs.runShutDownService(empCode);
         dateLoggedIn = prefs.get("dateLoggedIn", "");
@@ -103,10 +115,9 @@ public class RescanUI extends javax.swing.JFrame implements fpLibrary {
             enterEmpCode.setEnabled(false);
 
             fingerPrintValueByte = prefs.getByteArray(empCode, fingerPrintValueByteEmpty);
-            System.out.println("finger print byte after" + fingerPrintValueByte);
 
             if (fingerPrintValueByte.length < 1) {
-                Configs.notifyUser(this, "Employee Doesnt exist");
+                Configs.notifyUser(RescanUI.this, "Employee Doesnt exist");
             } else {
                 System.out.println("before adding " + prefs.get("empCode", ""));
                 prefs.put("empCode", empCode);
@@ -132,6 +143,113 @@ public class RescanUI extends javax.swing.JFrame implements fpLibrary {
         }
     }
 
+    private void addToComboBox(ArrayList<String> ipNames) {
+        for (int x = 0; x < ipNames.size(); x++) {
+            String newIp = ipNames.get(x);
+            serverSetIpButton.addItem(newIp);
+        }
+    }
+
+    private void WriteToFile(String ipName, String ipAddress) {
+        try {
+            FileWriter writer = new FileWriter(fileName, true);
+            try (BufferedWriter bufferedWriter = new BufferedWriter(writer)) {
+                bufferedWriter.newLine();
+                bufferedWriter.write(ipName + " : " + ipAddress);
+            }
+        } catch (IOException e) {
+        }
+    }
+
+    private ArrayList<String> readFromFile() {
+        try {
+            File yourFile = new File(fileName);
+
+            if (!yourFile.exists()) {
+                yourFile.createNewFile();
+            } else if ((yourFile.exists()) && (!yourFile.isDirectory())) {
+                try (FileReader reader = new FileReader(fileName)) {
+                    BufferedReader bufferedReader = new BufferedReader(reader);
+                    String line;
+                    while ((line = bufferedReader.readLine()) != null) {
+                        System.out.println("Reads from files " + line);
+                        returnedIps.add(line);
+                    }
+                }
+            }
+        } catch (IOException e) {
+        }
+        return returnedIps;
+    }
+
+    private void readIps() {
+        try {
+            ipsFromFile = readFromFile();
+
+            if (ipsFromFile.size() > 0) {
+
+                for (int x = 0; x < ipsFromFile.size(); x++) {
+                    if (!((String) ipsFromFile.get(x)).isEmpty()) {
+                        System.out.println("file ips " + (String) ipsFromFile.get(x));
+                        String[] ipAddSplit = ((String) ipsFromFile.get(x)).split(":");
+                        ipNames.add(ipAddSplit[0]);
+                        ipAddresses.add(ipAddSplit[1].replaceAll(" ", ""));
+                    }
+                }
+
+                addToComboBox(ipNames);
+
+            } else {
+                String ip
+                        = JOptionPane.showInputDialog(this, "Enter default ip", "Default Ip");
+                String oneTimeIp = "http://" + ip + ":3000";
+                getIpsAndSave(oneTimeIp);
+            }
+
+        } catch (Exception e) {
+            WriteToFile("", "");
+        }
+    }
+
+    private void getIpsAndSave(String oneTimeIp) {
+        try {
+            HttpResponse<JsonNode> request = Unirest.get(oneTimeIp + "/fingerprintCore/getIps")
+                    .header("Content-Type", "application/json").asJson();
+
+            if (((JsonNode) request.getBody()).getObject().getBoolean("status")) {
+
+                for (int x = 0; x < ((JsonNode) request.getBody()).getObject().getJSONArray("content").length(); x++) {
+                    WriteToFile(((JsonNode) request.getBody()).getObject().getJSONArray("content").getJSONObject(x).getString("serverName"), ((JsonNode) request.getBody()).getObject().getJSONArray("content").getJSONObject(x).getString("serverIp"));
+                }
+                addIpsToView();
+            } else {
+                JOptionPane.showMessageDialog(this, "Error, please contact admin");
+            }
+        } catch (UnirestException ex) {
+            JOptionPane.showMessageDialog(this, "Check server connection!");
+
+            Logger.getLogger(RescanUI.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (JSONException e) {
+        }
+    }
+
+    private void addIpsToView() {
+        serverSetIpButton.removeAllItems();
+        ipNames.clear();
+        ipAddresses.clear();
+        ArrayList<String> fileRead = readFromFile();
+        for (int x = 0; x < fileRead.size(); x++) {
+            if (!((String) fileRead.get(x)).isEmpty()) {
+                System.out.println("file ips " + (String) fileRead.get(x));
+                String[] ipAddSplit = ((String) fileRead.get(x)).split(":");
+                ipNames.add(ipAddSplit[0]);
+                ipAddresses.add(ipAddSplit[1].replaceAll(" ", ""));
+            }
+        }
+
+        addToComboBox(ipNames);
+    }
+
     private JLabel errorMessageServer;
 
     private JButton exitButton;
@@ -151,7 +269,7 @@ public class RescanUI extends javax.swing.JFrame implements fpLibrary {
         setEmpCode = new JButton();
         jPanel4 = new JPanel();
         serverTextField = new JTextField();
-        serverSetIpButton = new JButton();
+        serverSetIpButton = new JComboBox();
         errorMessageServer = new JLabel();
         welcomeMessage = new JLabel();
 
@@ -161,11 +279,8 @@ public class RescanUI extends javax.swing.JFrame implements fpLibrary {
 
         scanfinger.setText("Scan fingerprint");
         scanfinger.setEnabled(false);
-        scanfinger.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent evt) {
-                scanfingerActionPerformed(evt);
-            }
-
+        scanfinger.addActionListener((ActionEvent evt) -> {
+            scanfingerActionPerformed(evt);
         });
         fingerprintscan.setBorder(BorderFactory.createTitledBorder(""));
         fingerprintscan.setMaximumSize(new java.awt.Dimension(200, 200));
@@ -179,11 +294,8 @@ public class RescanUI extends javax.swing.JFrame implements fpLibrary {
         jPanel2.setBorder(BorderFactory.createTitledBorder(""));
 
         exitButton.setPreferredSize(new java.awt.Dimension(1, 1));
-        exitButton.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent evt) {
-                exitButtonActionPerformed(evt);
-            }
-
+        exitButton.addActionListener((ActionEvent evt) -> {
+            exitButtonActionPerformed(evt);
         });
         jPanel3.setBorder(BorderFactory.createTitledBorder(""));
 
@@ -198,11 +310,8 @@ public class RescanUI extends javax.swing.JFrame implements fpLibrary {
         jPanel3Layout.setVerticalGroup(jPanel3Layout.createParallelGroup(GroupLayout.Alignment.LEADING).addGroup(jPanel3Layout.createSequentialGroup().addContainerGap().addComponent(statusMessage, -2, 27, -2).addContainerGap(-1, 32767)));
 
         connect_modem.setText("Connect Modem");
-        connect_modem.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent evt) {
-                connect_modemActionPerformed(evt);
-            }
-
+        connect_modem.addActionListener((ActionEvent evt) -> {
+            connect_modemActionPerformed(evt);
         });
         GroupLayout jPanel2Layout = new GroupLayout(jPanel2);
         jPanel2.setLayout(jPanel2Layout);
@@ -211,37 +320,19 @@ public class RescanUI extends javax.swing.JFrame implements fpLibrary {
         jPanel2Layout.setVerticalGroup(jPanel2Layout.createParallelGroup(GroupLayout.Alignment.LEADING).addGroup(jPanel2Layout.createSequentialGroup().addContainerGap().addComponent(jPanel3, -2, 50, -2).addPreferredGap(LayoutStyle.ComponentPlacement.RELATED, -1, 32767).addGroup(jPanel2Layout.createParallelGroup(GroupLayout.Alignment.BASELINE).addComponent(exitButton, -2, -1, -2).addComponent(connect_modem)).addContainerGap()));
 
         resetEmpCode.setText("Reset Employee Code");
-        resetEmpCode.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent evt) {
-                resetEmpCodeActionPerformed(evt);
-            }
-
+        resetEmpCode.addActionListener((ActionEvent evt) -> {
+            resetEmpCodeActionPerformed(evt);
         });
         enterEmpCode.setEnabled(false);
-        enterEmpCode.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent evt) {
-                enterEmpCodeActionPerformed(evt);
-            }
 
-        });
         setEmpCode.setText("Submit Emp Code");
-        setEmpCode.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent evt) {
-                setEmpCodeActionPerformed(evt);
-            }
-
+        setEmpCode.addActionListener((ActionEvent evt) -> {
+            setEmpCodeActionPerformed(evt);
         });
         jPanel4.setBorder(BorderFactory.createTitledBorder(null, "Server Information", 0, 0, null, Color.blue));
 
         serverTextField.setToolTipText("Enter Server ip");
 
-        serverSetIpButton.setText(setIpLabelText);
-        serverSetIpButton.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent evt) {
-                serverSetIpButtonActionPerformed(evt);
-            }
-
-        });
         GroupLayout jPanel4Layout = new GroupLayout(jPanel4);
         jPanel4.setLayout(jPanel4Layout);
         jPanel4Layout.setHorizontalGroup(jPanel4Layout.createParallelGroup(GroupLayout.Alignment.LEADING).addGroup(GroupLayout.Alignment.TRAILING, jPanel4Layout.createSequentialGroup().addContainerGap().addGroup(jPanel4Layout.createParallelGroup(GroupLayout.Alignment.TRAILING).addComponent(errorMessageServer, -1, -1, 32767).addComponent(serverTextField, GroupLayout.Alignment.LEADING).addGroup(GroupLayout.Alignment.LEADING, jPanel4Layout.createSequentialGroup().addComponent(serverSetIpButton).addGap(0, 0, 32767))).addContainerGap()));
@@ -288,16 +379,8 @@ public class RescanUI extends javax.swing.JFrame implements fpLibrary {
     private void initialiseFingerScanner() {
         if (!prefs.get("BASE_URL", "").isEmpty()) {
             if ((empCode != null) && (!empCode.isEmpty())) {
-
-                if (prefs.get("badShutdown", "").equalsIgnoreCase("yes")) {
-                    setUserFalseLoggedIn();
-                } else {
-                    System.out.println("stored finger byte " + fingerPrintValueByte + " " + fingerPrintValueByteSize);
-
                     getFingerprintFromServer(empCode);
-                    fpLibrary.INSTANCE.GenFpChar();
-                }
-
+//                    fpLibrary.INSTANCE.GenFpChar();
             } else {
                 Configs.notifyUser(this, "Provide employee code");
             }
@@ -322,9 +405,6 @@ public class RescanUI extends javax.swing.JFrame implements fpLibrary {
         dispose();
         IntroPage main = new IntroPage();
         main.setVisible(true);
-    }
-
-    private void enterEmpCodeActionPerformed(ActionEvent evt) {
     }
 
     private void setEmpCodeActionPerformed(ActionEvent evt) {
@@ -367,32 +447,9 @@ public class RescanUI extends javax.swing.JFrame implements fpLibrary {
         }
     }
 
-    private void serverSetIpButtonActionPerformed(ActionEvent evt) {
-        if (serverTextField.getText().isEmpty()) {
-            errorMessageServer.setText("Please enter server IP or contact Supervisor");
-            errorMessageServer.setForeground(Color.red);
-        } else {
-            if (serverSetIpButton.getText().equals(editIpLabelText)) {
-                serverSetIpButton.setText(setIpLabelText);
-                serverTextField.setVisible(true);
-            }else {
-                serverTextField.setVisible(false);
-                errorMessageServer.setText("Successfully set IP");
-                errorMessageServer.setForeground(Color.green);
-                serverSetIpButton.setText(editIpLabelText);
-                prefs.get("BASE_URL", "");
-                prefs.put("BASE_URL", "http://" + serverTextField.getText().toString() + ":3000");
-            }
-           
-        }
-    }
-
-    public static void main(String[] args) {
-    }
-
     public void start() {
         timer.schedule(new TimerTask() {
-
+            @Override
             public void run() {
                 fpsmessage();
             }
@@ -429,11 +486,6 @@ public class RescanUI extends javax.swing.JFrame implements fpLibrary {
                 } else {
                     statusMessage.setText("Capture Fail");
                 }
-                break;
-            case 7:
-                configs.DrawImage(fingerprintimage, img);
-
-                System.out.println("returned image for drawing " + String.valueOf(img));
                 break;
             case 8:
                 statusMessage.setText("Time Out");
@@ -494,9 +546,9 @@ public class RescanUI extends javax.swing.JFrame implements fpLibrary {
             fingerPrintValueByte = Hex.decodeHex(image_hex.toCharArray());
             usernameStored = ((JsonNode) request.getBody()).getObject().getJSONObject("content").getString("first_name");
             lastnameStored = ((JsonNode) request.getBody()).getObject().getJSONObject("content").getString("last_name");
-            isSupervisor = Boolean.valueOf(((JsonNode) request.getBody()).getObject().getJSONObject("content").getBoolean("isSuperVisor"));
+            isSupervisor = ((JsonNode) request.getBody()).getObject().getJSONObject("content").getBoolean("isSuperVisor");
             prefs.get(Configs.isSupervisor, "");
-            if (isSupervisor.booleanValue()) {
+            if (isSupervisor) {
                 prefs.put(Configs.isSupervisor, "yes");
             } else {
                 prefs.put(Configs.isSupervisor, "no");
@@ -506,6 +558,7 @@ public class RescanUI extends javax.swing.JFrame implements fpLibrary {
             prefs.put("empBranch", ((JsonNode) request.getBody()).getObject().getJSONObject("content").getString("emp_branch"));
 
             start();
+            fpLibrary.INSTANCE.GenFpChar();
         } catch (DecoderException | JSONException ex) {
             Logger.getLogger(RescanUI.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -580,6 +633,7 @@ public class RescanUI extends javax.swing.JFrame implements fpLibrary {
     private void performaltTab() {
         Timer wait = new Timer();
         wait.schedule(new TimerTask() {
+            @Override
             public void run() {
                 try {
                     Runtime.getRuntime().exec("D:\\alt.bat", null, null);
@@ -598,7 +652,7 @@ public class RescanUI extends javax.swing.JFrame implements fpLibrary {
 
     private JButton scanfinger;
 
-    private JButton serverSetIpButton;
+    private JComboBox serverSetIpButton;
 
     private JTextField serverTextField;
 
@@ -607,80 +661,4 @@ public class RescanUI extends javax.swing.JFrame implements fpLibrary {
     private JLabel statusMessage;
 
     private JLabel welcomeMessage;
-
-    public int OpenDevice(int comnum, int nbaud, int style) {
-        throw new UnsupportedOperationException("Not supported yet.");
-    }
-
-    public int LinkDevice() {
-        throw new UnsupportedOperationException("Not supported yet.");
-    }
-
-    public int CloseDevice() {
-        throw new UnsupportedOperationException("Not supported yet.");
-    }
-
-    public int DevicePrint(byte[] buffer, int size) {
-        throw new UnsupportedOperationException("Not supported yet.");
-    }
-
-    public int GetImage(byte[] imagedata, int[] size) {
-        throw new UnsupportedOperationException("Not supported yet.");
-    }
-
-    public void GenFpChar() {
-        throw new UnsupportedOperationException("Not supported yet.");
-    }
-
-    public void EnrolFpChar() {
-        throw new UnsupportedOperationException("Not supported yet.");
-    }
-
-    public int GetWorkMsg() {
-        throw new UnsupportedOperationException("Not supported yet.");
-    }
-
-    public int GetRetMsg() {
-        throw new UnsupportedOperationException("Not supported yet.");
-    }
-
-    public int GetFpCharByGen(byte[] tpbuf, int[] tpsize) {
-        throw new UnsupportedOperationException("Not supported yet.");
-    }
-
-    public int GetFpCharByEnl(byte[] fpbuf, int[] fpsize) {
-        throw new UnsupportedOperationException("Not supported yet.");
-    }
-
-    public int ChangeTemplateType(int type, byte[] input, byte[] output) {
-        throw new UnsupportedOperationException("Not supported yet.");
-    }
-
-    public int MatchTemplateOne(byte[] pSrcData, byte[] pDstData, int nDstSize) {
-        throw new UnsupportedOperationException("Not supported yet.");
-    }
-
-    public int MatchTemplate(byte[] pSrcData, byte[] pDstData) {
-        throw new UnsupportedOperationException("Not supported yet.");
-    }
-
-    public void Handler(String libname, Class interfaceClass, Map options) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-    }
-
-    public NativeLibrary getNativeLibrary() {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-    }
-
-    public String getLibraryName() {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-    }
-
-    public Class getInterfaceClass() {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-    }
-
-    public Object invoke(Object proxy, Method method, Object[] inArgs) throws Throwable {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-    }
 }

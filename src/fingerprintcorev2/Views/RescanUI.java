@@ -41,11 +41,11 @@ public class RescanUI extends javax.swing.JFrame {
     private final Timer buttonEnableTimer = new Timer();
     String dateLoggedIn;
     String dateLoggedInWithEmpCode;
-    byte[] fingerPrintValueByte = new byte[255];
-    byte[] fingerPrintValueByteEmpty = new byte[255];
+    byte[] fingerPrintValueByte = new byte[1024];
+    byte[] fingerPrintValueByteEmpty = new byte[1024];
     int fingerPrintValueByteSize;
     int fingerPrintValueByteSizeEmpty;
-    private final byte[] matbuf = new byte[255];
+    private final byte[] matbuf = new byte[1024];
     private final int[] matsize = new int[1];
     String usernameStored;
     String lastnameStored;
@@ -69,11 +69,11 @@ public class RescanUI extends javax.swing.JFrame {
     private JTextField enterEmpCode;
    
     public RescanUI() {
-//        setUndecorated(true);
-//        setExtendedState(6);
+        setUndecorated(true);
+        setExtendedState(6);
         initComponents();
-//        setAlwaysOnTop(true);
-//        setDefaultCloseOperation(0);
+        setAlwaysOnTop(true);
+        setDefaultCloseOperation(0);
 
         buttonEnableTimer.schedule(new TimerTask() {
 
